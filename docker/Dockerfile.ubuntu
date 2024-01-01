@@ -1,0 +1,21 @@
+FROM ubuntu:jammy as build
+ARG GOLANG_VERSION=1.22.0
+
+COPY . /opt/osprober
+
+RUN apt-get update; \
+    apt-get -y upgrade
+
+RUN cd /tmp; \
+    apt-get install -y wget; \
+    wget https://go.dev/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz; \
+    tar -C /usr/local -xzf go${GOLANG_VERSION}.linux-amd64.tar.gz
+
+ENV PATH="$PATH:/usr/local/go/bin"
+RUN cd /opt/osprober/; \
+    go build -o osprober osprober.go
+
+FROM alpine
+COPY --from=build /opt/osprober/osprober /
+
+ENTRYPOINT ["/osprober"]

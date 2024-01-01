@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package osprober.surfacers.formated_file;
+
+option go_package = "github.com/jumpojoy/osprober/surfacers/formated_file/proto";
+
+message SurfacerConf {
+  // Where to write the results
+  required string file_path = 1;
+}

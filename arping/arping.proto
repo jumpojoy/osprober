@@ -1,0 +1,15 @@
+// This protobuf defines a new cloudprober probe type.
+syntax = "proto2";
+
+package osprober;
+
+option go_package="github.com/jumpojoy/osprober/arping";
+
+import "github.com/cloudprober/cloudprober/probes/proto/config.proto";
+
+message ProbeConf {
+}
+
+extend cloudprober.probes.ProbeDef {
+  optional ProbeConf arping_probe = 200;
+}
