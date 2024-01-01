@@ -15,6 +15,7 @@
 package formated_file;
 
 import (
+	"sync"
 	"time"
 	"context"
 	"encoding/json"
@@ -34,6 +35,7 @@ type FileMapEvent struct {
 }
 
 type FileMapSurfacer struct {
+    mu     sync.RWMutex
     Received map[string]*FileMapEvent
     l *logger.Logger
 }
@@ -47,8 +49,10 @@ func New(config *configpb.SurfacerConf, l *logger.Logger) (*FileMapSurfacer, err
 	dst := config.GetFilePath()
 	for true {
             time.Sleep(10 * time.Second)
+	    fms.mu.Lock()
 	    jsonString, _ := json.Marshal(fms.Received)
 	    ioutil.WriteFile(dst, jsonString, os.ModePerm)
+	    fms.mu.Unlock()
 	    l.Debugf("Dump metrics to %s", dst)
     	}
     }()
@@ -68,6 +72,8 @@ func (ts *FileMapSurfacer) Write(ctx context.Context, em *metrics.EventMetrics) 
                 for _, mk := range em.MetricsKeys() {
 		        metrics[mk] = em.Metric(mk).String()
 	        }
+		ts.mu.Lock()
 		ts.Received[dst] = &FileMapEvent{Name: dst, Timestamp: em.Timestamp, Labels: labels, Metrics: metrics}
+		ts.mu.Unlock()
 	}
 }

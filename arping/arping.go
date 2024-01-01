@@ -152,6 +152,7 @@ func (p *Probe) runProbeForTarget(ctx context.Context, target endpoint.Endpoint)
 		// receive arp response
 		response, _, err := sock.receive()
 		if err != nil {
+			p.l.Debugf("Did not get reply for %s %s %s", target.Name, target.IP.String(), err.Error())
 			return err
 		}
 
@@ -201,7 +202,7 @@ func (p *Probe) runProbe(ctx context.Context, dataChan chan *metrics.EventMetric
 			em.Metric("total").(*metrics.Int).Inc()
 			err := p.runProbeForTarget(ctx, target) // run probe just for a single target
 			if err != nil {
-				p.l.Errorf(err.Error())
+				p.l.Debugf(err.Error())
 				return
 			}
 			em.Metric("success").(*metrics.Int).Inc()
