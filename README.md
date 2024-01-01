@@ -21,3 +21,7 @@ monitor workloads absed on ARP.
 
   - Formated File extension. Store monitoring metrics in file with speceific format. Only
     json format is supported at the moment.
+
+## Examples
+
+sudo ./osprober --config_file examples/file_based_targets/cloudprober.cfg   --formated_file_metrics=/tmp/foo.txt
