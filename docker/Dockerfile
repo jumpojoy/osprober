@@ -5,7 +5,7 @@ RUN cd /opt/osprober/; \
     go build -o osprober osprober.go
 
 RUN apk add git; \
-    IMAGE_TAG=$(/opt/osprober/tools/get_version.sh); \
+    IMAGE_TAG=$(sh /opt/osprober/tools/get_version.sh); \
     echo "${IMAGE_TAG}" > /opt/osprober/image_tag.txt
 
 FROM alpine
