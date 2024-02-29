@@ -40,6 +40,10 @@ type FileMapSurfacer struct {
     l *logger.Logger
 }
 
+const metricWriteTime = 10 * time.Second
+
+const metricExpirationTime = 6 * metricWriteTime
+
 func New(config *configpb.SurfacerConf, l *logger.Logger) (*FileMapSurfacer, error) {
     fms := &FileMapSurfacer{
 	    Received: make(map[string] *FileMapEvent),
@@ -48,12 +52,24 @@ func New(config *configpb.SurfacerConf, l *logger.Logger) (*FileMapSurfacer, err
     go func() {
 	dst := config.GetFilePath()
 	for true {
-            time.Sleep(10 * time.Second)
+            time.Sleep(metricWriteTime)
+	    staleTime := time.Now().Truncate(metricExpirationTime)
+	    var expiredMetrics []string
 	    fms.mu.Lock()
+	    for name, metric := range fms.Received {
+                    if metric.Timestamp.Before(staleTime) {
+                                expiredMetrics = append(expiredMetrics, name)
+                                delete(fms.Received, name)
+                        }
+
+            }
 	    jsonString, _ := json.Marshal(fms.Received)
 	    ioutil.WriteFile(dst, jsonString, os.ModePerm)
 	    fms.mu.Unlock()
 	    l.Debugf("Dump metrics to %s", dst)
+	    if len(expiredMetrics) > 0 {
+		    l.Debugf("Drop metrics %v", expiredMetrics)
+            }
     	}
     }()
 
@@ -72,6 +88,7 @@ func (ts *FileMapSurfacer) Write(ctx context.Context, em *metrics.EventMetrics) 
                 for _, mk := range em.MetricsKeys() {
 		        metrics[mk] = em.Metric(mk).String()
 	        }
+
 		ts.mu.Lock()
 		ts.Received[dst] = &FileMapEvent{Name: dst, Timestamp: em.Timestamp, Labels: labels, Metrics: metrics}
 		ts.mu.Unlock()

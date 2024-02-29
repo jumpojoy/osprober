@@ -72,12 +72,16 @@ func (p *Probe) Start(ctx context.Context, dataChan chan *metrics.EventMetrics) 
 			probeTicker.Stop()
 			return
 		case <-probeTicker.C:
-			// On probe tick, write data to the channel and run probe.
-			for _, em := range p.res {
-				dataChan <- em.Clone()
-			}
+			var oldTargets []endpoint.Endpoint = p.targets
 			p.targets = p.opts.Targets.ListEndpoints()
+
 			p.initProbeMetrics()
+			p.clenupTargets(oldTargets)
+			// On probe tick, write data to the channel and run probe.
+			// save data after clean up
+                        for _, em := range p.res {
+                                dataChan <- em.Clone()
+                        }
 			probeCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(p.opts.Timeout))
 			p.runProbe(probeCtx, dataChan)
 			cancelFunc()
@@ -105,6 +109,24 @@ func (p *Probe) initProbeMetrics() {
 			AddLabel("probe", p.name).
 			AddLabel("dst", target.Name)
 	}
+}
+
+// send event for deleted targets, tootal == -1 means it was deleted
+func (p *Probe) clenupTargets(targets []endpoint.Endpoint) {
+        for _, t := range targets {
+		var isExists bool = false
+                for _, n := range p.targets {
+			if n.Name == t.Name {
+				isExists = true
+                                break
+                        }
+                }
+                if !isExists {
+			delete(p.res, t.Name)
+                }
+
+        }
+
 }
 
 // runProbeForTarget runs probe for a single target.
