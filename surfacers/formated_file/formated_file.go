@@ -53,7 +53,7 @@ func New(config *configpb.SurfacerConf, l *logger.Logger) (*FileMapSurfacer, err
 	dst := config.GetFilePath()
 	for true {
             time.Sleep(metricWriteTime)
-	    staleTime := time.Now().Truncate(metricExpirationTime)
+	    staleTime := time.Now().Add(-metricExpirationTime)
 	    var expiredMetrics []string
 	    fms.mu.Lock()
 	    for name, metric := range fms.Received {
