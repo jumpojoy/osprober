@@ -77,13 +77,9 @@ func (p *Probe) Start(ctx context.Context, dataChan chan *metrics.EventMetrics) 
 
 			p.initProbeMetrics()
 			p.clenupTargets(oldTargets)
-			// On probe tick, write data to the channel and run probe.
-			// save data after clean up
-                        for _, em := range p.res {
-                                dataChan <- em.Clone()
-                        }
 			probeCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(p.opts.Timeout))
 			p.runProbe(probeCtx, dataChan)
+			p.exportMetrics(dataChan)
 			cancelFunc()
 		}
 	}
@@ -193,8 +189,8 @@ func (p *Probe) runProbeForTarget(ctx context.Context, target endpoint.Endpoint)
 	return nil
 }
 
-// transformLabels do probe label transformation
-func (p *Probe) transformLabels(dataChan chan *metrics.EventMetrics){
+// Export metrics to surfacer
+func (p *Probe) exportMetrics(dataChan chan *metrics.EventMetrics){
         for _, target := range p.targets {
 		// Update pod labels, do transformation from
                 // target labels.
@@ -216,7 +212,6 @@ func (p *Probe) runProbe(ctx context.Context, dataChan chan *metrics.EventMetric
 		p.l.Debugf("Running probe for target %s, %s", target.Name, target.IP)
 		wg.Add(1)
 
-                p.transformLabels(dataChan)
 		go func(target endpoint.Endpoint, em *metrics.EventMetrics) {
 			defer wg.Done()
 			start := time.Now()
