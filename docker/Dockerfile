@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine as build
+FROM golang:1.23-alpine as build
 
 COPY . /opt/osprober
 RUN cd /opt/osprober/; \
