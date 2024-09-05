@@ -24,6 +24,10 @@ FROM alpine
 COPY --from=build /opt/osprober/osprober /
 COPY --from=build /opt/osprober/image_tag.txt /tmp/image_tag.txt
 
+RUN set -xe \
+    && apk -U upgrade \
+    && rm -f /var/cache/apk/*
+
 RUN IMAGE_TAG=$(cat /tmp/image_tag.txt); \
     sh -c "echo -e \"LABELS:\n  IMAGE_TAG: ${IMAGE_TAG}\" > /dockerimage_metadata"
 
