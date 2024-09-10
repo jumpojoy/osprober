@@ -1,5 +1,5 @@
 FROM ubuntu:jammy as build
-ARG GOLANG_VERSION=1.23.0
+ARG GOLANG_VERSION=1.23.1
 
 COPY . /opt/osprober
 
