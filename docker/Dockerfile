@@ -1,3 +1,4 @@
+# rebuild at: Thu Oct 24 10:10:36 EEST 2024
 FROM golang:1.23-alpine as build
 
 COPY . /opt/osprober
