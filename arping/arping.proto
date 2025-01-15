@@ -8,6 +8,7 @@ option go_package="github.com/jumpojoy/osprober/arping";
 import "github.com/cloudprober/cloudprober/probes/proto/config.proto";
 
 message ProbeConf {
+  optional int32 max_workers = 1 [default = 250];
 }
 
 extend cloudprober.probes.ProbeDef {

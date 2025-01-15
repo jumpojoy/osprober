@@ -153,6 +153,9 @@ func (p *Probe) runProbeForTarget(ctx context.Context, target endpoint.Endpoint)
 		p.l.Errorf("Failed to find address for interface.%s: %s", iface.Name, err.Error())
 		return err
 	}
+	//p.l.Errorf("srcMac %s srcIP %s dstMac %s", srcMac, srcIP, dstMac)
+	//srcMac, err := net.ParseMAC("fa:16:3e:78:b1:9d")
+	//srcIP := net.ParseIP("192.168.50.1")
 	request := newArpRequest(srcMac, srcIP, dstMac, dstIP)
 
 	sock, err := initialize(*iface)
@@ -206,11 +209,17 @@ func (p *Probe) runProbe(ctx context.Context, dataChan chan *metrics.EventMetric
 	p.targets = p.opts.Targets.ListEndpoints()
 
 	var wg sync.WaitGroup
-	p.l.Debugf("Running cycle for probe targets %s", p.name)
+	maxWorkers := p.c.GetMaxWorkers()
+	p.l.Debugf("Running cycle for probe targets %s with maxWorkers %d", p.name, maxWorkers)
+
+	semaphore := make(chan struct{}, maxWorkers)
+	start := time.Now()
+
 	for _, target := range p.targets {
 
 		p.l.Debugf("Running probe for target %s, %s", target.Name, target.IP)
 		wg.Add(1)
+		semaphore <- struct{}{} // acquire semaphore
 
 		go func(target endpoint.Endpoint, em *metrics.EventMetrics) {
 			defer wg.Done()
@@ -218,6 +227,7 @@ func (p *Probe) runProbe(ctx context.Context, dataChan chan *metrics.EventMetric
 			em.Timestamp = start
 			em.Metric("total").(*metrics.Int).Inc()
 			err := p.runProbeForTarget(ctx, target) // run probe just for a single target
+			<-semaphore // release semaphore
 			if err != nil {
 				p.l.Debugf(err.Error())
 				return
@@ -228,4 +238,6 @@ func (p *Probe) runProbe(ctx context.Context, dataChan chan *metrics.EventMetric
 	}
 	wg.Wait()
 	p.l.Debugf("Finished cycle for probe targets %s", p.name)
+	elapsed_seconds := int(time.Since(start).Seconds())
+        p.l.Debugf("Took %d to check all targets.", elapsed_seconds)
 }
