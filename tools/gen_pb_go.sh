@@ -53,19 +53,20 @@ else
   echo "OS unsupported by this this build script. Please install protoc manually."
 fi
 
+TMPDIR=$(mktemp -d)
+pushd $TMPDIR
+
 arch=$(uname -m)
 
 protoc_package="protoc-${PROTOC_VERSION}-${os}-${arch}.zip"
 protoc_package_url="https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/${protoc_package}"
 
-TMPDIR=/home/jumpojoy/tmp/
-cd $TMPDIR
 echo -e "Downloading protobuf compiler from..\n${protoc_package_url}"
 echo "======================================================================"
 wget "${protoc_package_url}"
 unzip "${protoc_package}"
 export protoc_path=${PWD}/bin/protoc
-cd -
+popd
 
 function cleanup {
   echo "Removing temporary directory used for protoc installation: ${TMPDIR}"
@@ -86,8 +87,6 @@ echo "======================================================================"
 cd $PROJECTROOT
 
 # Create a temporary director to generate protobuf Go files.
-TMPDIR=$(mktemp -d)
-echo $TMPDIR
 mkdir -p ${TMPDIR}/github.com/jumpojoy
 CLOUDPROBER_REPO=github.com/cloudprober/cloudprober
 pushd $PROJECTROOT/$PROJECT
@@ -98,7 +97,7 @@ git clone --depth 1 --branch  ${CLOUDPROBER_TAG} http://${CLOUDPROBER_REPO} ${TM
 
 rsync -mr --exclude='.git' --include='*/' --include='*.proto' --include='*.cue' --exclude='*' $PROJECT $TMPDIR/github.com/jumpojoy
 
-cd $TMPDIR
+pushd $TMPDIR
 
 MODULE=github.com/jumpojoy/osprober
 
@@ -122,4 +121,6 @@ find ${MODULE} \( -name *.pb.go -o -name *proto_gen.cue \) | \
     cp "$pbgofile" "$dst"
   done
 
-cd -
+popd
+
+cleanup
